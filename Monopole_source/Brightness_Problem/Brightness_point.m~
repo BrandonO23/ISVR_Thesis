@@ -3,7 +3,7 @@ clc
 clear
 it = 1;
 
-for f = 100:100:1000
+for f = 100:100:5000
 
 
 % f = 1000;            % Single frequency
