@@ -2,12 +2,12 @@
 clc 
 clear
 it = 1;
-f = 100:10:500;
+f = 1000:1000:5000;
 qit = zeros(length(f),1);
 
 %%
 iter = 1;
-for f = 2000:500:7000
+for f = 1000:1000:5000
 % f = 1000;
 omega = 2*pi*f;      % Angular frequency 
 c = 344;             % Speed of sound
@@ -16,10 +16,10 @@ rho = 1.225;         % Density of air
 k = 2*pi./lambda;    % Wave number
 
 delta = .01;
-rx = -1:delta:1;                 % x
-ry = -1:delta:1;                  % y
+rx = -.5:delta:.5;                 % x
+ry = -.5:delta:.5;                 % y
 [X, Y] = meshgrid(rx,ry);        % Meshgrid from rx and ry
-radius = .5;
+radius = .3;
 Meshtest = sqrt((X).^2 + (Y).^2);
 
 
@@ -27,7 +27,7 @@ Meshtest = sqrt((X).^2 + (Y).^2);
 % Measurement Points
 
 int = 1;
-deg = 0:15:360-15;
+deg = 0:15:360 - 15;
 pos = zeros(length(deg),2);
 for i = deg
 
@@ -43,7 +43,7 @@ end
 % Bright 90 degrees
 % for d = 0:5:160
 % d = 35;
-bdeg = 0;
+bdeg = 45:15:90;
 bind = find(deg == bdeg(1)):find(deg == bdeg(end));
 bpos = pos(bind,:);
 
@@ -55,7 +55,9 @@ else
 end
 %%
 % Source positions in meters
-Cs = [.004 0; 
+Cs = [.004 0;
+      .03 0;
+     -.03 0;
      -.004 0;];
   
 l = size(Cs,1);                  
@@ -64,7 +66,7 @@ green = cell(l,1);
 p = zeros(length(ry),length(rx));
 
 Gb = zeros(size(bpos,1),l);
-Gd = zeros(length(dpos),l);
+Gd = zeros(size(dpos,1),l);
 
 for i = 1:l
     MeshZ{i} = sqrt((X-Cs(i,1)).^2 + (Y-Cs(i,2)).^2);
@@ -79,28 +81,28 @@ end
 
 %%
 
-E = (.8*5e-5)^2; 
+E = .8*5e-5; 
 Rd = Gd'*Gd;
 Rb = Gb'*Gb;
-beta = 0;
-[V,D] = eig((Gd'*Gd + beta*eye(2))\(Gb'*Gb));
+beta = 10^12;
+[V,D] = eig((Gd'*Gd + beta*eye(size(Cs,1)))\(Gb'*Gb));
 
 md = max(diag(D));
 q = md*V(:,find(diag(D) == md));
 
-while q'*q >= E
+while abs(q) >= E/6
 
-    [V,D] = eig((Gd'*Gd + beta*eye(2))\(Gb'*Gb));
+    [V,D] = eig((Gd'*Gd + beta*eye(size(Cs,1)))\(Gb'*Gb));
     md = max(diag(D));
     q = md*V(:,find(diag(D) == md));
-%     test(iter) = q'*q;
-%     iter = iter + 1;
-    beta = beta + 100000000;
+    beta = beta + 1000000000;
 
 end
+b(iter) = beta;
 AE(iter) = q'*q;
-Pre(iter) = 20*log10(abs(Gb*q)/.00002);
+Pre(iter) = 20*log10(mean(abs(Gb*q))/.00002);
 iter = iter + 1;
+10*log10((q'*Rb*q)./(q'*Rd*q))
  %%
  
  for i = 1:l
@@ -109,19 +111,20 @@ iter = iter + 1;
 
 %%
 
-% surf(rx,ry,abs(p),'edgecolor', 'none')
-% colormap('jet')
-% caxis([0 1])
-% view(0,90)
-% colorbar
-% xlabel('Meters'),ylabel('Meters')
-% hold on
-% for i = 1:length(dpos)
-%     scatter3(X(1,dpos(i,1)),Y(dpos(i,2),1),10000,'o','linewidth',2,'MarkerFaceColor','w','MarkerEdgeColor','w')
-% end
-% for i = 1:size(bpos,1)
-%         scatter3(X(1,bpos(i,1)),Y(bpos(i,2),1),10000,'x','linewidth',2,'MarkerFaceColor','w','MarkerEdgeColor','w')
-% end
-% hold off
-% pause(.1)
+surf(rx,ry,20*log10(abs(p)./.00002),'edgecolor', 'none')
+colormap('jet')
+caxis([40 100])
+view(0,90)
+colorbar
+xlabel('Meters'),ylabel('Meters')
+title(['F = ' num2str(f)]);
+hold on
+for i = 1:length(dpos)
+    scatter3(X(1,dpos(i,1)),Y(dpos(i,2),1),10000,'o','linewidth',2,'MarkerFaceColor','w','MarkerEdgeColor','w')
+end
+for i = 1:size(bpos,1)
+        scatter3(X(1,bpos(i,1)),Y(bpos(i,2),1),10000,'x','linewidth',2,'MarkerFaceColor','w','MarkerEdgeColor','w')
+end
+hold off
+pause(.01)
 end

@@ -7,8 +7,8 @@ qit = zeros(length(f),1);
 
 %%
 iter = 1;
-for f = 2000:500:10000
-% f = 1000;
+% for f = 1000:1000:10000
+f = 1000;
 omega = 2*pi*f;      % Angular frequency 
 c = 344;             % Speed of sound
 lambda = c./f;       % Wavelength
@@ -17,7 +17,7 @@ k = 2*pi./lambda;    % Wave number
 
 delta = .01;
 rx = -1:delta:1;                 % x
-ry = 0:delta:1;                  % y
+ry = -1:delta:1;                  % y
 [X, Y] = meshgrid(rx,ry);        % Meshgrid from rx and ry
 radius = .5;
 Meshtest = sqrt((X).^2 + (Y).^2);
@@ -27,7 +27,7 @@ Meshtest = sqrt((X).^2 + (Y).^2);
 % Measurement Points
 
 int = 1;
-deg = 0:15:180;
+deg = 0:15:360 - 15;
 pos = zeros(length(deg),2);
 for i = deg
 
@@ -43,7 +43,7 @@ end
 % Bright 90 degrees
 % for d = 0:5:160
 % d = 35;
-bdeg = 45;
+bdeg = 0;
 bind = find(deg == bdeg(1)):find(deg == bdeg(end));
 bpos = pos(bind,:);
 
@@ -55,7 +55,9 @@ else
 end
 %%
 % Source positions in meters
-Cs = [.004 0; 
+Cs = [.004 0;
+      .03 0;
+     -.03 0;
      -.004 0;];
   
 l = size(Cs,1);                  
@@ -80,27 +82,33 @@ end
 %%
 
 E = (.8*5e-5)^2; 
-Rd = Gd'*Gd;
-Rb = Gb'*Gb;
-beta = 0;
-[V,D] = eig((Gd'*Gd + beta*eye(2))\(Gb'*Gb));
+Rd = (Gd'*Gd)./size(Gd,1);
+Rb = (Gb'*Gb)./size(Gd,1);
+beta = 10^7;
+alpha = 1;
+% for alpha = a
+[V,D] = eig((Gb'*Gb - alpha.*Gd'*Gd));
 
 md = max(diag(D));
-q = md*V(:,find(diag(D) == md));
+q = V(:,find(diag(D) == md));
+q1 = md*V(:,find(diag(D) == md));
 
-while q'*q >= E
 
-    [V,D] = eig((Gd'*Gd + beta*eye(2))\(Gb'*Gb));
-    md = max(diag(D));
-    q = md*V(:,find(diag(D) == md));
-%     test(iter) = q'*q;
-%     iter = iter + 1;
-    beta = beta + 100000000;
-
-end
-AE(iter) = q'*q;
-Pre(iter) = 20*log10(abs(Gb*q)/.00002);
+% while q'*q >= E
+% 
+%     [V,D] = eig((Gd'*Gd + beta*eye(size(Cs,1)))\(Gb'*Gb));
+%     md = max(diag(D));
+%     q = md*V(:,find(diag(D) == md));
+% %     test(iter) = q'*q;
+% %     iter = iter + 1;
+%     beta = beta + 100000000;
+% 
+% end
+AE(iter) = q1'*q1;
+Pre(iter) = 20*log10(abs(Gb*q1)/.00002);
 iter = iter + 1;
+
+% plot(a,Pre)
  %%
  
  for i = 1:l
@@ -111,10 +119,11 @@ iter = iter + 1;
 
 surf(rx,ry,abs(p),'edgecolor', 'none')
 colormap('jet')
-caxis([0 1])
+caxis([0 10])
 view(0,90)
 colorbar
 xlabel('Meters'),ylabel('Meters')
+title(['F = ' num2str(f)]);
 hold on
 for i = 1:length(dpos)
     scatter3(X(1,dpos(i,1)),Y(dpos(i,2),1),10000,'o','linewidth',2,'MarkerFaceColor','w','MarkerEdgeColor','w')
@@ -123,5 +132,5 @@ for i = 1:size(bpos,1)
         scatter3(X(1,bpos(i,1)),Y(bpos(i,2),1),10000,'x','linewidth',2,'MarkerFaceColor','w','MarkerEdgeColor','w')
 end
 hold off
-pause(.01)
-end
+pause(.5)
+% end
