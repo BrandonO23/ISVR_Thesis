@@ -43,7 +43,7 @@ end
 % Bright 90 degrees
 % for d = 0:5:160
 % d = 35;
-bdeg = 0;
+bdeg = 75:15:105;
 bind = find(deg == bdeg(1)):find(deg == bdeg(end));
 bpos = pos(bind,:);
 

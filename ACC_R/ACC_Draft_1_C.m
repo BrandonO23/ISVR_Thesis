@@ -2,13 +2,9 @@
 clc 
 clear
 it = 1;
-f = 1000:1000:5000;
-qit = zeros(length(f),1);
-
 %%
 iter = 1;
-for f = 1000:1000:5000
-% f = 1000;
+for f = 1000:100:8000
 omega = 2*pi*f;      % Angular frequency 
 c = 344;             % Speed of sound
 lambda = c./f;       % Wavelength
@@ -20,8 +16,6 @@ rx = -.5:delta:.5;                 % x
 ry = -.5:delta:.5;                 % y
 [X, Y] = meshgrid(rx,ry);        % Meshgrid from rx and ry
 radius = .3;
-Meshtest = sqrt((X).^2 + (Y).^2);
-
 
 %%
 % Measurement Points
@@ -43,7 +37,7 @@ end
 % Bright 90 degrees
 % for d = 0:5:160
 % d = 35;
-bdeg = 45:15:90;
+bdeg = 90;
 bind = find(deg == bdeg(1)):find(deg == bdeg(end));
 bpos = pos(bind,:);
 
@@ -55,10 +49,8 @@ else
 end
 %%
 % Source positions in meters
-Cs = [.004 0;
-      .03 0;
-     -.03 0;
-     -.004 0;];
+Cs = [.03 0;
+      -.03 0];
   
 l = size(Cs,1);                  
 MeshZ = cell(l,1);
@@ -82,15 +74,15 @@ end
 %%
 
 E = .8*5e-5; 
-Rd = Gd'*Gd;
-Rb = Gb'*Gb;
+Rd = (Gd'*Gd)./size(Gd,1);
+Rb = (Gb'*Gb)./size(Gb,1);
 beta = 10^12;
-[V,D] = eig((Gd'*Gd + beta*eye(size(Cs,1)))\(Gb'*Gb));
+[V,D] = eig((Rd + beta*eye(size(Cs,1)))\Rb);
 
 md = max(diag(D));
 q = md*V(:,find(diag(D) == md));
 
-while abs(q) >= E/6
+while (abs(q) >= E) 
 
     [V,D] = eig((Gd'*Gd + beta*eye(size(Cs,1)))\(Gb'*Gb));
     md = max(diag(D));
@@ -102,7 +94,7 @@ b(iter) = beta;
 AE(iter) = q'*q;
 Pre(iter) = 20*log10(mean(abs(Gb*q))/.00002);
 iter = iter + 1;
-10*log10((q'*Rb*q)./(q'*Rd*q))
+test(iter) = 10*log10((q'*Rb*q)./(q'*Rd*q));
  %%
  
  for i = 1:l
