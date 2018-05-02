@@ -1,11 +1,10 @@
 %Draft 1
 clc 
 clear
-freq = 100:100:10000;
+freq = 10.^(1:.005:4);
 iter = 1;
 for f = freq
 % Setup Acoustic variables
-
 omega = 2*pi*f;      % Angular frequency 
 c = 344;             % Speed of sound
 lambda = c./f;       % Wavelength
@@ -14,11 +13,13 @@ k = (2*pi)./lambda;  % Wave number
 
 % Build Mesh Grid
 delta = .01;                       % Descrete Spacing 
-rx = -1:delta:1;                   % x 
-ry = -1:delta:1;                   % y
-[X, Y] = meshgrid(rx,ry);          % X and Y to create meshgrid
-radius = .5;                       % Radius of circular control points
-MeshRef = sqrt((X).^2 + (Y).^2);   % Reference Mesh distance
+rx = -.5:delta:.5;                   % x 
+ry = -.5:delta:.5;                   % y
+rz = -.5:delta:.5;                   % z
+[X, Y, Z] = meshgrid(rx,ry, rz);     % X Y and Z to create meshgrid
+radius = .3;                       % Radius of circular control points
+
+MeshRef = sqrt((X).^2 + (Y).^2 + (Z).^2);   % Reference Mesh distance
 
 
 %% Measurement Points
@@ -42,8 +43,9 @@ for i = deg
     pos(intM,:) = [dx,dy]; 
     intM = intM + 1;
 end
+
 %% Bright Points
-bdeg = 90-15:90+15;     % Vector that gives the position on circular array
+bdeg = 0:0;     % Vector that gives the position on circular array
 
 % Finds indices of bright points, and pulls them from pos
 bind = find(deg == bdeg(1)):find(deg == bdeg(end));
@@ -56,9 +58,10 @@ if bind(1) == 1
 else
     dpos = [pos(1:bind(1)-1,:); pos(bind(end)+1:end,:)];
 end
+
 %% Source positions in meters [x,y], can take any number of control sources 
-Cs = [ 0  0.02;
-       0 -0.02];
+Cs = [ 0.02 0;
+      -0.02 0];
   
 % Preallocate l meshgrids, greens functions, and pressure matrices/vectors 
 l = size(Cs,1);                                 
@@ -80,32 +83,22 @@ for i = 1:l
     end
 end
 
-%% From Reference Document
+%% Build Full G matrix
+G = [Gb;Gd];
+a = [ones(size(Gb,1),1);zeros(size(Gd,1),1)];
 
-Db = 0.1;           % Constant real value for Dark zone
-Lb = size(Gb,1);    % Control points in Bright zone
-Ld = size(Gd,1);    % Control points in Dark zone
 
-% Bright and Dark correletion matrices of acoustic trasnfer functions
-Rd = (Gd'*Gd);      
-Rb = (Gb'*Gb);
+%% Solve using PM
+q = (G'*G)\G'*a;
 
-% eigenvector & eigenvalues from Equation 3
-[V,D] = eig((Rd)\(Rb));
 
-% Max eigenvector corresponding to max eigenvalue
-md = max(diag(D));
-q = V(:,find(diag(D) == md));
-
-% Find lambda that satisfies Equation 4
-lam1 = sqrt(Db./(q'*Rd*q));
-q = lam1.*q;
 
 %% Solve for total field, using superposition
 for i = 1:l
    p = p + green{i}.*q(i);
 end
-  
+
+%% Build single monopole refeernece for Array Effort
 Gr = zeros(size(bpos,1),1);
 for j = 1:size(bpos,1)
      greenR = 1j*omega*rho*exp(-1i*k.*MeshRef)./(4*pi*MeshRef);
@@ -113,7 +106,14 @@ for j = 1:size(bpos,1)
 end
 avgG = mean(Gr); 
 qmono = mean(Gb*q)/avgG;
+
+% Bright and Dark correletion matrices of acoustic trasnfer functions
+Rd = (Gd'*Gd);      
+Rb = (Gb'*Gb);
+Lb = size(Gb,1);    % Number of control points in Bright zone
+Ld = size(Gd,1);    % Number of control points in Dark zone
  
+% Array effort and Acoustic Contrast
 AE(iter) = 10*log10((q'*q)./((qmono'*qmono)));
 AC(iter) = 10*log10((Ld.*real(q'*Rb*q))./(Lb.*real(q'*Rd*q)));
 
@@ -136,11 +136,11 @@ AC(iter) = 10*log10((Ld.*real(q'*Rb*q))./(Lb.*real(q'*Rd*q)));
 % end
 % hold off
 % pause(.01)
-iter = iter + 1;
+ iter = iter + 1;
 end
 %%
 subplot(1,2,1)
-semilogx(freq,(AC)),title('Acoustic Contrast')
+semilogx(freq,AC),title('Acoustic Contrast')
 grid
 subplot(1,2,2)
 semilogx(freq,AE),title('Array Effort')

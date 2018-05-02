@@ -49,8 +49,8 @@ else
 end
 %%
 % Source positions in meters
-Cs = [.03 0;
-      -.03 0];
+Cs = [ 0  0.02;
+       0 -0.02];
   
 l = size(Cs,1);                  
 MeshZ = cell(l,1);
@@ -105,7 +105,7 @@ test(iter) = 10*log10((q'*Rb*q)./(q'*Rd*q));
 
 surf(rx,ry,20*log10(abs(p)./.00002),'edgecolor', 'none')
 colormap('jet')
-caxis([40 100])
+caxis([40 105])
 view(0,90)
 colorbar
 xlabel('Meters'),ylabel('Meters')

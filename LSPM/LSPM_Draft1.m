@@ -1,11 +1,10 @@
 %Draft 1
 clc 
 clear
-freq = 100:100:10000;
+freq = 10.^(1:.005:4);
 iter = 1;
 for f = freq
 % Setup Acoustic variables
-
 omega = 2*pi*f;      % Angular frequency 
 c = 344;             % Speed of sound
 lambda = c./f;       % Wavelength
@@ -44,7 +43,7 @@ for i = deg
 end
 
 %% Bright Points
-bdeg = 90:90;     % Vector that gives the position on circular array
+bdeg = 0:0;     % Vector that gives the position on circular array
 
 % Finds indices of bright points, and pulls them from pos
 bind = find(deg == bdeg(1)):find(deg == bdeg(end));
@@ -82,26 +81,15 @@ for i = 1:l
     end
 end
 
-%% From Reference Document
+%% Build Full G matrix
+G = [Gb;Gd];
+a = [ones(size(Gb,1),1);zeros(size(Gd,1),1)];
 
-Db = 0.1;           % Constant real value for Dark zone
-Lb = size(Gb,1);    % Number of control points in Bright zone
-Ld = size(Gd,1);    % Number of control points in Dark zone
 
-% Bright and Dark correletion matrices of acoustic trasnfer functions
-Rd = (Gd'*Gd);      
-Rb = (Gb'*Gb);
+%% Solve using PM
+q = (G'*G)\G'*a;
 
-% eigenvector & eigenvalues from Equation 3
-[V,D] = eig((Rd)\(Rb));
 
-% Max eigenvector corresponding to max eigenvalue
-md = max(diag(D));
-q = V(:,find(diag(D) == md));
-
-% Find lambda that satisfies Equation 4
-lam1 = sqrt(Db./(q'*Rd*q));
-q = lam1.*q;
 
 %% Solve for total field, using superposition
 for i = 1:l
@@ -116,36 +104,42 @@ for j = 1:size(bpos,1)
 end
 avgG = mean(Gr); 
 qmono = mean(Gb*q)/avgG;
+
+% Bright and Dark correletion matrices of acoustic trasnfer functions
+Rd = (Gd'*Gd);      
+Rb = (Gb'*Gb);
+Lb = size(Gb,1);    % Number of control points in Bright zone
+Ld = size(Gd,1);    % Number of control points in Dark zone
  
-%% Array effort and Acoustic Contrast
+% Array effort and Acoustic Contrast
 AE(iter) = 10*log10((q'*q)./((qmono'*qmono)));
 AC(iter) = 10*log10((Ld.*real(q'*Rb*q))./(Lb.*real(q'*Rd*q)));
 
 
 %%
-figg = figure(1);
-surf(rx,ry,20*log10(abs(p)./.00002),'edgecolor', 'none')
-colormap('jet')
-caxis([40 100])
-view(0,90)
-colorbar
-xlabel('Meters'),ylabel('Meters')
-title(['F = ' num2str(f)]);
-hold on
-for i = 1:length(dpos)
-    scatter3(X(1,dpos(i,1)),Y(dpos(i,2),1),10000,'o','linewidth',2,'MarkerFaceColor','w','MarkerEdgeColor','w')
-end
-for i = 1:size(bpos,1)
-        scatter3(X(1,bpos(i,1)),Y(bpos(i,2),1),10000,'x','linewidth',2,'MarkerFaceColor','w','MarkerEdgeColor','w')
-end
-hold off
-pause(.01)
-iter = iter + 1;
+% figg = figure(1);
+% surf(rx,ry,20*log10(abs(p)./.00002),'edgecolor', 'none')
+% colormap('jet')
+% caxis([40 100])
+% view(0,90)
+% colorbar
+% xlabel('Meters'),ylabel('Meters')
+% title(['F = ' num2str(f)]);
+% hold on
+% for i = 1:length(dpos)
+%     scatter3(X(1,dpos(i,1)),Y(dpos(i,2),1),10000,'o','linewidth',2,'MarkerFaceColor','w','MarkerEdgeColor','w')
+% end
+% for i = 1:size(bpos,1)
+%         scatter3(X(1,bpos(i,1)),Y(bpos(i,2),1),10000,'x','linewidth',2,'MarkerFaceColor','w','MarkerEdgeColor','w')
+% end
+% hold off
+% pause(.01)
+ iter = iter + 1;
 end
 %%
-% subplot(1,2,1)
-% semilogx(freq,(AC)),title('Acoustic Contrast')
-% grid
-% subplot(1,2,2)
-% semilogx(freq,AE),title('Array Effort')
-% grid
+subplot(1,2,1)
+semilogx(freq,AC),title('Acoustic Contrast')
+grid
+subplot(1,2,2)
+semilogx(freq,AE),title('Array Effort')
+grid

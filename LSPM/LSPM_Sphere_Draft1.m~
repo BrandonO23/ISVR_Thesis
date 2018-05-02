@@ -1,11 +1,10 @@
 %Draft 1
 clc 
 clear
-freq = 100:100:10000;
+freq = 10.^(1:.005:4);
 iter = 1;
 for f = freq
 % Setup Acoustic variables
-
 omega = 2*pi*f;      % Angular frequency 
 c = 344;             % Speed of sound
 lambda = c./f;       % Wavelength
@@ -16,15 +15,17 @@ k = (2*pi)./lambda;  % Wave number
 delta = .01;                       % Descrete Spacing 
 rx = -.5:delta:.5;                   % x 
 ry = -.5:delta:.5;                   % y
-[X, Y] = meshgrid(rx,ry);          % X and Y to create meshgrid
+rz = -.5:delta:.5;                   % z
+[X, Y, Z] = meshgrid(rx,ry, rz);     % X Y and Z to create meshgrid
 radius = .3;                       % Radius of circular control points
-MeshRef = sqrt((X).^2 + (Y).^2);   % Reference Mesh distance
+
+MeshRef = sqrt((X).^2 + (Y).^2 + (Z).^2);   % Reference Mesh distance
 
 
 %% Measurement Points
 
 intM = 1;                       % iter value for pos array
-deg = 0:15:360 - 15;            % array of degree points on circle
+deg = 15:15:180 - 15;            % array of degree points on circle
 pos = zeros(length(deg),2);     % Preallocate position vector 
 
 % Loop that finds the position of each point on the circular array and puts
@@ -33,18 +34,19 @@ for i = deg
 
     xd = radius*cos(i*pi/180);  % x component
     yd = radius*sin(i*pi/180);  % y component
+    
 
     % Finds position on Meshgrid using X and Y
-    dx  =  find(round(X(1,:),2) == round(xd,2)); 
-    dy  =  find(round(Y(:,1),2) == round(yd,2));
+    dx  =  find(round(X(1,:,1),2) == round(xd,2)); 
+    dy  =  find(round(Y(:,1,1),2) == round(yd,2));
     
     % Inserts that position in pos vector
-    pos(intM,:) = [dx,dy]; 
+    posTemp(intM,:) = [dx,dy]; 
     intM = intM + 1;
 end
 
 %% Bright Points
-bdeg = 90:90;     % Vector that gives the position on circular array
+bdeg = 0:0;     % Vector that gives the position on circular array
 
 % Finds indices of bright points, and pulls them from pos
 bind = find(deg == bdeg(1)):find(deg == bdeg(end));
@@ -82,26 +84,15 @@ for i = 1:l
     end
 end
 
-%% From Reference Document
+%% Build Full G matrix
+G = [Gb;Gd];
+a = [ones(size(Gb,1),1);zeros(size(Gd,1),1)];
 
-Db = 0.1;           % Constant real value for Dark zone
-Lb = size(Gb,1);    % Number of control points in Bright zone
-Ld = size(Gd,1);    % Number of control points in Dark zone
 
-% Bright and Dark correletion matrices of acoustic trasnfer functions
-Rd = (Gd'*Gd);      
-Rb = (Gb'*Gb);
+%% Solve using PM
+q = (G'*G)\G'*a;
 
-% eigenvector & eigenvalues from Equation 3
-[V,D] = eig((Rd)\(Rb));
 
-% Max eigenvector corresponding to max eigenvalue
-md = max(diag(D));
-q = V(:,find(diag(D) == md));
-
-% Find lambda that satisfies Equation 4
-lam1 = sqrt(Db./(q'*Rd*q));
-q = lam1.*q;
 
 %% Solve for total field, using superposition
 for i = 1:l
@@ -116,36 +107,42 @@ for j = 1:size(bpos,1)
 end
 avgG = mean(Gr); 
 qmono = mean(Gb*q)/avgG;
+
+% Bright and Dark correletion matrices of acoustic trasnfer functions
+Rd = (Gd'*Gd);      
+Rb = (Gb'*Gb);
+Lb = size(Gb,1);    % Number of control points in Bright zone
+Ld = size(Gd,1);    % Number of control points in Dark zone
  
-%% Array effort and Acoustic Contrast
+% Array effort and Acoustic Contrast
 AE(iter) = 10*log10((q'*q)./((qmono'*qmono)));
 AC(iter) = 10*log10((Ld.*real(q'*Rb*q))./(Lb.*real(q'*Rd*q)));
 
 
 %%
-figg = figure(1);
-surf(rx,ry,20*log10(abs(p)./.00002),'edgecolor', 'none')
-colormap('jet')
-caxis([40 100])
-view(0,90)
-colorbar
-xlabel('Meters'),ylabel('Meters')
-title(['F = ' num2str(f)]);
-hold on
-for i = 1:length(dpos)
-    scatter3(X(1,dpos(i,1)),Y(dpos(i,2),1),10000,'o','linewidth',2,'MarkerFaceColor','w','MarkerEdgeColor','w')
-end
-for i = 1:size(bpos,1)
-        scatter3(X(1,bpos(i,1)),Y(bpos(i,2),1),10000,'x','linewidth',2,'MarkerFaceColor','w','MarkerEdgeColor','w')
-end
-hold off
-pause(.01)
-iter = iter + 1;
+% figg = figure(1);
+% surf(rx,ry,20*log10(abs(p)./.00002),'edgecolor', 'none')
+% colormap('jet')
+% caxis([40 100])
+% view(0,90)
+% colorbar
+% xlabel('Meters'),ylabel('Meters')
+% title(['F = ' num2str(f)]);
+% hold on
+% for i = 1:length(dpos)
+%     scatter3(X(1,dpos(i,1)),Y(dpos(i,2),1),10000,'o','linewidth',2,'MarkerFaceColor','w','MarkerEdgeColor','w')
+% end
+% for i = 1:size(bpos,1)
+%         scatter3(X(1,bpos(i,1)),Y(bpos(i,2),1),10000,'x','linewidth',2,'MarkerFaceColor','w','MarkerEdgeColor','w')
+% end
+% hold off
+% pause(.01)
+ iter = iter + 1;
 end
 %%
-% subplot(1,2,1)
-% semilogx(freq,(AC)),title('Acoustic Contrast')
-% grid
-% subplot(1,2,2)
-% semilogx(freq,AE),title('Array Effort')
-% grid
+subplot(1,2,1)
+semilogx(freq,AC),title('Acoustic Contrast')
+grid
+subplot(1,2,2)
+semilogx(freq,AE),title('Array Effort')
+grid
