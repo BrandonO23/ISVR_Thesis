@@ -90,6 +90,7 @@ while (abs(q) >= E)
     beta = beta + 1000000000;
 
 end
+
 b(iter) = beta;
 AE(iter) = q'*q;
 Pre(iter) = 20*log10(mean(abs(Gb*q))/.00002);
