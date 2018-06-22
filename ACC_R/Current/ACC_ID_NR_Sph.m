@@ -1,16 +1,18 @@
 %% Acoustic Contrast - Indirect Method - No Regularization - 
-% Uses only one bright point on a sphere of sensors
+
 
 clc 
 clear
-freq = 10.^(2:.001:4);
+freq = 10.^(2:.01:4);
 iter = 1;
 rad = 1;
+
+fb = .004;
 %% Source positions in meters [x,y], can take any number of control sources 
-Cs = [.09 0 0;
-       .03 0 0;
-      -.03 0 0;
-      -.09 0 0];
+Cs = [fb  .03 0;
+      fb -.03 0;
+     -fb  .03 0;
+     -fb -.03 0];
   
 [Sph,deg,nX,nY,nZ] = evenSph(rad,15);
   
@@ -77,19 +79,23 @@ for f = freq
     
     iter;
     iter = iter + 1;
+%     
+%     VISfield(Cs,q,f) 
+%     pause(.1)
 end
 %%
-figure(1)
+% figure(1)
 subplot(1,2,1)
 semilogx(freq,AC),title('Acoustic Contrast')
-ylim([0 12])
+ylim([0 10])
 grid
 subplot(1,2,2)
 semilogx(freq,AE),title('Array Effort')
-% ylim([-5 40])
 grid
 
-figure(2)
-scatter3(dpos(:,1),dpos(:,2),dpos(:,3),'k','fill'),hold on
-scatter3(bpos(:,1),bpos(:,2),bpos(:,3),'k')
-scatter3(Cs(:,1),Cs(:,2),Cs(:,3),150,'+','r')
+%%
+% 
+% figure(2)
+% scatter3(dpos(:,1),dpos(:,2),dpos(:,3),'k','fill'),hold on
+% scatter3(bpos(:,1),bpos(:,2),bpos(:,3),'k')
+% scatter3(Cs(:,1),Cs(:,2),Cs(:,3),150,'+','r')

@@ -1,15 +1,15 @@
-%% Acoustic Contrast - Indirect Method - No Regularization - 
-% Uses only one bright point on a sphere of sensors
-
+%% Acoustic Contrast - Indirect Method 
 clc 
 clear
-freq = 10.^(2:.001:4);
+freq = 10.^(2:.05:4);
 iter = 1;
 rad = 1;
+fb = .0035;
 %% Source positions in meters [x,y], can take any number of control sources 
-Cs = [ 0.04 0  0;
-       0    0  0
-      -0.04 0  0];
+Cs = [fb  .01 0;
+      fb -.01 0;
+     -fb  .01 0;
+     -fb -.01 0];
   
 [Sph,deg,nX,nY,nZ] = evenSph(rad,15);
   
@@ -52,7 +52,7 @@ for f = freq
     end
 
     %%
-    BC = 1;           % Constant real value for Dark zone
+    BC = 1;             % Constant real value for Dark zone
     Lb = size(Gb,1);    % Number of control points in Bright zone
     Ld = size(Gd,1);    % Number of control points in Dark zone
 
@@ -68,6 +68,8 @@ for f = freq
 
     [md, idx] = max(diag(D1));
     q = V(:,idx);
+    lam1 = sqrt(BC./(q'*Rb*q));
+    q = lam1.*q;
 
 
     %% Build single monopole reference for Array Effort
@@ -94,26 +96,30 @@ for f = freq
 
         % Array effort and Acoustic Contrast
         AE(iter) = 10*log10((q'*q)./((qmono'*qmono)./2));
+        
+        %%
+        
     end
 
-
+    
     b(iter) = beta;
     AC(iter) = 10*log10((real(q'*Rb*q.*Ld))./(real(q'*Rd*q.*Lb)));
     iter;
     iter = iter + 1;
+%     pause(.1)
+%     figure(2)
+%     VISfield(Cs,q,f)    
 end
 %%
 figure(1)
 subplot(1,2,1)
 semilogx(freq,AC),title('Acoustic Contrast')
-ylim([0 12])
 grid
 subplot(1,2,2)
 semilogx(freq,AE),title('Array Effort')
-% ylim([-5 40])
 grid
 
-figure(2)
-scatter3(dpos(:,1),dpos(:,2),dpos(:,3),'k','fill'),hold on
-scatter3(bpos(:,1),bpos(:,2),bpos(:,3),'k')
-scatter3(Cs(:,1),Cs(:,2),Cs(:,3),150,'*','r')
+% figure(2)
+% sphplot(Cs,dpos,bpos)
+%%
+
