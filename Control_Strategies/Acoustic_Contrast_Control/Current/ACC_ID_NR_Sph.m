@@ -3,17 +3,17 @@
 
 clc 
 clear
-freq = 10.^(2:.01:4);   % Frequency Vectors
+freq = 10.^(1:.01:4);   % Frequency Vectors
 rad = 1;                % Radius of Sphere
 inc = 15;               % Degree Increments
-fb = .005;              % Gives thickness of baffle/2
-dd = .005;              % Distance from left to right of loudspeakers
+fb = .04;               % Gives thickness of baffle/2
+dd = .007;               % Distance from left to right of loudspeakers
 
 %% Source positions in meters [x,y,z], can take any number of control sources 
-Cs = [fb  dd 0;
-      fb -dd 0;
-     -fb  dd 0;
-     -fb -dd 0];
+Cs = [0  dd  0;
+      0 -dd  0;
+      0  0  0;
+      0 -0  0];
   
 [bpos,dpos,Sph,deg,nX,nY,nZ] = crossBD(rad,inc);
 
@@ -72,11 +72,11 @@ end
 figure(1)
 subplot(1,2,1)
 semilogx(freq,AC),title('Acoustic Contrast')
-ylim([0 11])
+% ylim([0 11])
 grid
 subplot(1,2,2)
 semilogx(freq,AE),title('Array Effort')
-ylim([-6 22])
+% ylim([-6 22])
 grid
 
 % figure(2)
