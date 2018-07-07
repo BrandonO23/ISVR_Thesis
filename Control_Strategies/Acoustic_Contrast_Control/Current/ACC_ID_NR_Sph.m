@@ -64,8 +64,8 @@ for n = 1:length(freq)
     AC(n) = 10*log10((abs(q'*Rb*q))./(abs(q'*Rd*q)));
     
      
-%   VISfield(Cs,q,f) 
-%   pause(.1)
+  VISfield(Cs,q,freq(i)) 
+  pause(.1)
 
 end
 %%
