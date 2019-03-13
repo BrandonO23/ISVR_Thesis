@@ -91,7 +91,7 @@ DI20c = calcDI(M20000C,Abscissa,DD);
 
 
 %%
-figure(2)
+figure(1)
 subplot(2,3,1)
 plot(2.*pi.*.005.*freq./344,DI10);
 subplot(2,3,2)
@@ -131,6 +131,7 @@ legend('8k','10k','12k','14k','16k','20k');
 
 grid on
 ylabel('DI (dB)')
+title('mesh size')
 ylim([-26 10])
 xlabel('ka')
     
